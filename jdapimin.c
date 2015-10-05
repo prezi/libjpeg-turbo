@@ -80,6 +80,9 @@ jpeg_CreateDecompress (j_decompress_ptr cinfo, int version, size_t structsize)
   /* And initialize the overall input controller. */
   jinit_input_controller(cinfo);
 
+  cinfo->pm_dummy_pass = FALSE;
+  cinfo->lowmem_progressive_decode = FALSE;
+
   /* OK, I'm ready */
   cinfo->global_state = DSTATE_START;
 }

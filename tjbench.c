@@ -46,7 +46,7 @@
 #define _throwbmp(m) _throw(m, bmpgeterr())
 
 int flags=TJFLAG_NOREALLOC, componly=0, decomponly=0, doyuv=0, quiet=0,
-	dotile=0, pf=TJPF_BGR, yuvpad=1, warmup=1;
+	dotile=0, pf=TJPF_BGR, yuvpad=1, warmup=1, memtest=0;
 char *ext="ppm";
 const char *pixFormatStr[TJ_NUMPF]=
 {
@@ -176,6 +176,9 @@ int decomp(unsigned char *srcbuf, unsigned char **jpegbuf,
 						_throwtj("executing tjDecompress2()");
 			}
 		}
+#ifdef ENABLE_MEMORY_TEST
+		if (memtest) break;
+#endif
 		iter++;
 		if(iter>=1)
 		{
@@ -184,6 +187,10 @@ int decomp(unsigned char *srcbuf, unsigned char **jpegbuf,
 		}
 	}
 	if(doyuv) elapsed-=elapsedDecode;
+
+#ifdef ENABLE_MEMORY_TEST
+	printf("Total memory allocated (bytes) during decode  of %s: %d\n", filename, GetAllocatedMemory(handle));
+#endif
 
 	if(tjDestroy(handle)==-1) _throwtj("executing tjDestroy()");
 	handle=NULL;
@@ -905,7 +912,10 @@ int main(int argc, char *argv[])
 					}
 				}
 			}
-			if(!strcasecmp(argv[i], "-componly")) componly=1;
+			if (!strcasecmp(argv[i], "-componly")) componly = 1;
+#ifdef ENABLE_MEMORY_TEST
+			if (!strcasecmp(argv[i], "-memtest")) memtest = 1;
+#endif
 		}
 	}
 

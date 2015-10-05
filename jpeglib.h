@@ -265,6 +265,13 @@ typedef enum {
 
 
 /* Common fields between JPEG compression and decompression master structs. */
+#ifdef ENABLE_MEMORY_TEST
+#define ALLOCATED_MEMORY_COUNT \
+; \
+size_t allocated_memory              /* Allocated memory counter (cumulutative) */
+#else
+#define ALLOCATED_MEMORY_COUNT
+#endif
 
 #define jpeg_common_fields \
   struct jpeg_error_mgr * err;  /* Error handler module */\
@@ -272,7 +279,9 @@ typedef enum {
   struct jpeg_progress_mgr * progress; /* Progress monitor, or NULL if none */\
   void * client_data;           /* Available for use by application */\
   boolean is_decompressor;      /* So common code can tell which is which */\
-  int global_state              /* For checking call sequence validity */
+  int global_state              /* For checking call sequence validity */ \
+  ALLOCATED_MEMORY_COUNT
+
 
 /* Routines that are to be used by both halves of the library are declared
  * to receive a pointer to this structure.  There are no actual instances of
@@ -689,6 +698,9 @@ struct jpeg_decompress_struct {
    */
   int unread_marker;
 
+  boolean pm_dummy_pass;  /* indicates a dummy pass of a progressive mode JPEG */
+  boolean lowmem_progressive_decode;  /* indicates low memory decode of progressive mode JPEG */
+
   /*
    * Links to decompression subobjects (methods, private variables of modules)
    */
@@ -697,6 +709,7 @@ struct jpeg_decompress_struct {
   struct jpeg_d_coef_controller * coef;
   struct jpeg_d_post_controller * post;
   struct jpeg_input_controller * inputctl;
+  struct jpeg_scan_context_controller * scancontextctl;
   struct jpeg_marker_reader * marker;
   struct jpeg_entropy_decoder * entropy;
   struct jpeg_inverse_dct * idct;
@@ -807,6 +820,9 @@ struct jpeg_source_mgr {
   void (*skip_input_data) (j_decompress_ptr cinfo, long num_bytes);
   boolean (*resync_to_restart) (j_decompress_ptr cinfo, int desired);
   void (*term_source) (j_decompress_ptr cinfo);
+  boolean (*check_seekable) (j_decompress_ptr cinfo);
+  long (*get_src_offset) (j_decompress_ptr cinfo);
+  void (*restore_src) (j_decompress_ptr cinfo, long offset, size_t bytes_in_buffer);
 };
 
 
@@ -847,7 +863,8 @@ struct jpeg_memory_mgr {
                                            boolean pre_zero,
                                            JDIMENSION blocksperrow,
                                            JDIMENSION numrows,
-                                           JDIMENSION maxaccess);
+                                           JDIMENSION maxaccess,
+                                           boolean virtualbackingstore);
   void (*realize_virt_arrays) (j_common_ptr cinfo);
   JSAMPARRAY (*access_virt_sarray) (j_common_ptr cinfo, jvirt_sarray_ptr ptr,
                                     JDIMENSION start_row, JDIMENSION num_rows,

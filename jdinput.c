@@ -274,7 +274,7 @@ start_input_pass (j_decompress_ptr cinfo)
   latch_quant_tables(cinfo);
   (*cinfo->entropy->start_pass) (cinfo);
   (*cinfo->coef->start_input_pass) (cinfo);
-  cinfo->inputctl->consume_input = cinfo->coef->consume_data;
+  cinfo->inputctl->consume_input = cinfo->pm_dummy_pass?consume_markers:cinfo->coef->consume_data;
 }
 
 
@@ -325,6 +325,10 @@ consume_markers (j_decompress_ptr cinfo)
       if (! inputctl->pub.has_multiple_scans)
         ERREXIT(cinfo, JERR_EOI_EXPECTED); /* Oops, I wasn't expecting this! */
       start_input_pass(cinfo);
+#if defined(D_MULTISCAN_FILES_SUPPORTED) && defined(LOWMEM_PROGRESSIVE_DECODE)
+      if (cinfo->inputctl->has_multiple_scans && cinfo->lowmem_progressive_decode)
+        (*cinfo->scancontextctl->save_scan_state)(cinfo, cinfo->input_scan_number-1);
+#endif /* D_MULTISCAN_FILES_SUPPORTED && LOWMEM_PROGRESSIVE_DECODE */
     }
     break;
   case JPEG_REACHED_EOI:        /* Found EOI */

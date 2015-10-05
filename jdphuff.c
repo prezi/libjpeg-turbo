@@ -41,19 +41,20 @@ typedef struct {
  * such a compiler and you change MAX_COMPS_IN_SCAN.
  */
 
+#define ASSIGN_STATE_MEMBERWISE(dest,src)  \
+ 	((dest).EOBRUN = (src).EOBRUN, \
+ 	 (dest).last_dc_val[0] = (src).last_dc_val[0], \
+ 	 (dest).last_dc_val[1] = (src).last_dc_val[1], \
+ 	 (dest).last_dc_val[2] = (src).last_dc_val[2], \
+ 	 (dest).last_dc_val[3] = (src).last_dc_val[3])
+
 #ifndef NO_STRUCT_ASSIGN
 #define ASSIGN_STATE(dest,src)  ((dest) = (src))
 #else
 #if MAX_COMPS_IN_SCAN == 4
-#define ASSIGN_STATE(dest,src)  \
-        ((dest).EOBRUN = (src).EOBRUN, \
-         (dest).last_dc_val[0] = (src).last_dc_val[0], \
-         (dest).last_dc_val[1] = (src).last_dc_val[1], \
-         (dest).last_dc_val[2] = (src).last_dc_val[2], \
-         (dest).last_dc_val[3] = (src).last_dc_val[3])
+#define ASSIGN_STATE(dest,src) ASSIGN_STATE_MEMBERWISE(dest,src)
 #endif
 #endif
-
 
 typedef struct {
   struct jpeg_entropy_decoder pub; /* public fields */
@@ -195,6 +196,27 @@ start_pass_phuff_decoder (j_decompress_ptr cinfo)
   entropy->restarts_to_go = cinfo->restart_interval;
 }
 
+#if defined(D_MULTISCAN_FILES_SUPPORTED) && defined(LOWMEM_PROGRESSIVE_DECODE)
+
+void save_entropy_state(j_decompress_ptr cinfo, entropy_scan_context* context)
+{
+  phuff_entropy_ptr entropy = (phuff_entropy_ptr) cinfo->entropy;
+  context->bits_left=entropy->bitstate.bits_left;
+  context->get_buffer=entropy->bitstate.get_buffer;
+  ASSIGN_STATE_MEMBERWISE((*context),entropy->saved);
+  context->restarts_to_go=entropy->restarts_to_go;
+}
+
+void restore_entropy_state(j_decompress_ptr cinfo, entropy_scan_context* context)
+{
+  phuff_entropy_ptr entropy = (phuff_entropy_ptr) cinfo->entropy;
+  entropy->bitstate.bits_left=context->bits_left;
+  entropy->bitstate.get_buffer=context->get_buffer;
+  ASSIGN_STATE_MEMBERWISE(entropy->saved,(*context));
+  entropy->restarts_to_go=context->restarts_to_go;
+}
+
+#endif /* D_MULTISCAN_FILES_SUPPORTED && LOWMEM_PROGRESSIVE_DECODE */
 
 /*
  * Figure F.12: extend sign bit.

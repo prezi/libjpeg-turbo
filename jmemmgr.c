@@ -180,6 +180,7 @@ struct jvirt_barray_control {
   boolean b_s_open;             /* is backing-store data valid? */
   jvirt_barray_ptr next;        /* link to next virtual barray control block */
   backing_store_info b_s_info;  /* System-dependent control info */
+  boolean virtualbackingstore;	/* indicates virtual backing store (without temp file) */
 };
 
 
@@ -584,7 +585,7 @@ request_virt_sarray (j_common_ptr cinfo, int pool_id, boolean pre_zero,
 METHODDEF(jvirt_barray_ptr)
 request_virt_barray (j_common_ptr cinfo, int pool_id, boolean pre_zero,
                      JDIMENSION blocksperrow, JDIMENSION numrows,
-                     JDIMENSION maxaccess)
+                     JDIMENSION maxaccess, boolean virtualbackingstore)
 /* Request a virtual 2-D coefficient-block array */
 {
   my_mem_ptr mem = (my_mem_ptr) cinfo->mem;
@@ -605,6 +606,7 @@ request_virt_barray (j_common_ptr cinfo, int pool_id, boolean pre_zero,
   result->pre_zero = pre_zero;
   result->b_s_open = FALSE;     /* no associated backing-store object */
   result->next = mem->virt_barray_list; /* add to list of virtual arrays */
+  result->virtualbackingstore = virtualbackingstore;
   mem->virt_barray_list = result;
 
   return result;
@@ -693,7 +695,11 @@ realize_virt_arrays (j_common_ptr cinfo)
   }
 
   for (bptr = mem->virt_barray_list; bptr != NULL; bptr = bptr->next) {
+
     if (bptr->mem_buffer == NULL) { /* if not realized yet */
+      if (bptr->virtualbackingstore) {  
+	max_minheights = 1;
+      }
       minheights = ((long) bptr->rows_in_array - 1L) / bptr->maxaccess + 1L;
       if (minheights <= max_minheights) {
         /* This buffer fits in memory */
@@ -701,11 +707,13 @@ realize_virt_arrays (j_common_ptr cinfo)
       } else {
         /* It doesn't fit in memory, create backing store. */
         bptr->rows_in_mem = (JDIMENSION) (max_minheights * bptr->maxaccess);
-        jpeg_open_backing_store(cinfo, & bptr->b_s_info,
-                                (long) bptr->rows_in_array *
-                                (long) bptr->blocksperrow *
-                                (long) sizeof(JBLOCK));
-        bptr->b_s_open = TRUE;
+        if (!bptr->virtualbackingstore) {
+          jpeg_open_backing_store(cinfo, & bptr->b_s_info,
+ 				(long) bptr->rows_in_array *
+ 				(long) bptr->blocksperrow *
+ 				(long) sizeof(JBLOCK));
+          bptr->b_s_open = TRUE;
+        }
       }
       bptr->mem_buffer = alloc_barray(cinfo, JPOOL_IMAGE,
                                       bptr->blocksperrow, bptr->rows_in_mem);
@@ -771,14 +779,21 @@ do_barray_io (j_common_ptr cinfo, jvirt_barray_ptr ptr, boolean writing)
     if (rows <= 0)              /* this chunk might be past end of file! */
       break;
     byte_count = rows * bytesperrow;
-    if (writing)
-      (*ptr->b_s_info.write_backing_store) (cinfo, & ptr->b_s_info,
-                                            (void *) ptr->mem_buffer[i],
-                                            file_offset, byte_count);
-    else
-      (*ptr->b_s_info.read_backing_store) (cinfo, & ptr->b_s_info,
-                                           (void *) ptr->mem_buffer[i],
-                                           file_offset, byte_count);
+    if (writing) {
+      if (!ptr->virtualbackingstore) {
+        (*ptr->b_s_info.write_backing_store) (cinfo, & ptr->b_s_info,
+ 					    (void FAR *) ptr->mem_buffer[i],
+ 					    file_offset, byte_count);
+      }
+    } else {
+      if (!ptr->virtualbackingstore) {
+        (*ptr->b_s_info.read_backing_store) (cinfo, & ptr->b_s_info,
+ 					   (void FAR *) ptr->mem_buffer[i],
+ 					   file_offset, byte_count);
+      } else {
+        jzero_far((void FAR *) ptr->mem_buffer[i],byte_count);
+      }
+    }
     file_offset += byte_count;
   }
 }
@@ -888,7 +903,7 @@ access_virt_barray (j_common_ptr cinfo, jvirt_barray_ptr ptr,
   /* Make the desired part of the virtual array accessible */
   if (start_row < ptr->cur_start_row ||
       end_row > ptr->cur_start_row+ptr->rows_in_mem) {
-    if (! ptr->b_s_open)
+    if (!ptr->virtualbackingstore && !ptr->b_s_open)
       ERREXIT(cinfo, JERR_VIRTUAL_BUG);
     /* Flush old buffer contents if necessary */
     if (ptr->dirty) {

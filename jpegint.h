@@ -163,6 +163,13 @@ struct jpeg_input_controller {
   boolean eoi_reached;          /* True when EOI has been consumed */
 };
 
+/* Scan context control - for low memory progressive mode JPEG decoding */
+struct jpeg_scan_context_controller {
+  JMETHOD(void, save_scan_state, (j_decompress_ptr cinfo, int scan_no));
+  JMETHOD(void, restore_scan_state_pre, (j_decompress_ptr cinfo, int scan_no));
+  JMETHOD(void, restore_scan_state_post, (j_decompress_ptr cinfo, int scan_no));
+};
+
 /* Main buffer control (downsampled-data buffer) */
 struct jpeg_d_main_controller {
   void (*start_pass) (j_decompress_ptr cinfo, J_BUF_MODE pass_mode);
@@ -318,6 +325,7 @@ EXTERN(void) jinit_d_coef_controller (j_decompress_ptr cinfo,
 EXTERN(void) jinit_d_post_controller (j_decompress_ptr cinfo,
                                       boolean need_full_buffer);
 EXTERN(void) jinit_input_controller (j_decompress_ptr cinfo);
+EXTERN(void) jinit_scan_context_controller JPP((j_decompress_ptr cinfo));
 EXTERN(void) jinit_marker_reader (j_decompress_ptr cinfo);
 EXTERN(void) jinit_huff_decoder (j_decompress_ptr cinfo);
 EXTERN(void) jinit_phuff_decoder (j_decompress_ptr cinfo);

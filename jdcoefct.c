@@ -260,14 +260,31 @@ decompress_data (j_decompress_ptr cinfo, JSAMPIMAGE output_buf)
   JDIMENSION output_col;
   jpeg_component_info *compptr;
   inverse_DCT_method_ptr inverse_DCT;
-
-  /* Force some input to be done if we are getting ahead of the input. */
-  while (cinfo->input_scan_number < cinfo->output_scan_number ||
-         (cinfo->input_scan_number == cinfo->output_scan_number &&
-          cinfo->input_iMCU_row <= cinfo->output_iMCU_row)) {
-    if ((*cinfo->inputctl->consume_input)(cinfo) == JPEG_SUSPENDED)
-      return JPEG_SUSPENDED;
-  }
+#if defined(LOWMEM_PROGRESSIVE_DECODE)
+  int i;
+ 
+  if (cinfo->lowmem_progressive_decode) {
+    for (i=0;i<cinfo->input_scan_number;i++) {
+      (*cinfo->scancontextctl->restore_scan_state_pre)(cinfo,i);
+      (*cinfo->inputctl->start_input_pass)(cinfo);
+      (*cinfo->scancontextctl->restore_scan_state_post)(cinfo,i);
+      /* restore correct value for coef->MCU_rows_per_iMCU_row */
+      start_iMCU_row(cinfo); 
+      (*cinfo->inputctl->consume_input)(cinfo);
+      (*cinfo->scancontextctl->save_scan_state)(cinfo,i);
+    }
+  } else {
+#endif /* LOWMEM_PROGRESSIVE_DECODE */
+    /* Force some input to be done if we are getting ahead of the input. */
+    while (cinfo->input_scan_number < cinfo->output_scan_number ||
+	   (cinfo->input_scan_number == cinfo->output_scan_number &&
+	    cinfo->input_iMCU_row <= cinfo->output_iMCU_row)) {
+      if ((*cinfo->inputctl->consume_input)(cinfo) == JPEG_SUSPENDED)
+	return JPEG_SUSPENDED;
+    }
+#if defined(LOWMEM_PROGRESSIVE_DECODE)
+   }
+#endif /* LOWMEM_PROGRESSIVE_DECODE */
 
   /* OK, output from the virtual arrays. */
   for (ci = 0, compptr = cinfo->comp_info; ci < cinfo->num_components;
@@ -649,7 +666,7 @@ jinit_d_coef_controller (j_decompress_ptr cinfo, boolean need_full_buffer)
                                 (long) compptr->h_samp_factor),
          (JDIMENSION) jround_up((long) compptr->height_in_blocks,
                                 (long) compptr->v_samp_factor),
-         (JDIMENSION) access_rows);
+         (JDIMENSION) access_rows, cinfo->lowmem_progressive_decode?TRUE:FALSE);
     }
     coef->pub.consume_data = consume_data;
     coef->pub.decompress_data = decompress_data;

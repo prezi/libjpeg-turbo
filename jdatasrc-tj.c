@@ -23,6 +23,16 @@
 #include "jerror.h"
 
 
+/* Expanded data source object */
+
+typedef struct {
+  struct jpeg_source_mgr pub;	/* public fields */
+
+  unsigned char * inbuffer;		/* the buffer with the JPEG */
+} my_source_mgr;
+
+typedef my_source_mgr * my_src_ptr;
+
 /*
  * Initialize source --- called by jpeg_read_header
  * before any data is actually read.
@@ -33,7 +43,6 @@ init_mem_source (j_decompress_ptr cinfo)
 {
   /* no work necessary here */
 }
-
 
 /*
  * Fill the input buffer --- called whenever buffer is emptied.
@@ -149,6 +158,31 @@ term_source (j_decompress_ptr cinfo)
   /* no work necessary here */
 }
 
+METHODDEF(boolean)
+check_seekable(j_decompress_ptr cinfo)
+{
+  return TRUE;
+}
+
+/* Get the current position in the data source */
+METHODDEF(long)
+get_src_offset(j_decompress_ptr cinfo)
+{
+  my_src_ptr src = (my_src_ptr) cinfo->src;
+
+  return (src->pub.next_input_byte-src->inbuffer);
+}
+
+/* Reset the current position of the data source and refill input buffer */
+METHODDEF(void)
+restore_src(j_decompress_ptr cinfo, long file_offset, size_t bytes_in_buffer)
+{
+  my_src_ptr src = (my_src_ptr) cinfo->src;
+
+  src->pub.bytes_in_buffer = bytes_in_buffer;
+  src->pub.next_input_byte = src->inbuffer+file_offset;
+}
+
 
 /*
  * Prepare for input from a supplied memory buffer.
@@ -159,7 +193,7 @@ GLOBAL(void)
 jpeg_mem_src_tj (j_decompress_ptr cinfo,
                  const unsigned char * inbuffer, unsigned long insize)
 {
-  struct jpeg_source_mgr * src;
+  my_src_ptr src;
 
   if (inbuffer == NULL || insize == 0)  /* Treat empty input as fatal error */
     ERREXIT(cinfo, JERR_INPUT_EMPTY);
@@ -171,15 +205,19 @@ jpeg_mem_src_tj (j_decompress_ptr cinfo,
   if (cinfo->src == NULL) {     /* first time for this JPEG object? */
     cinfo->src = (struct jpeg_source_mgr *)
       (*cinfo->mem->alloc_small) ((j_common_ptr) cinfo, JPOOL_PERMANENT,
-                                  sizeof(struct jpeg_source_mgr));
+                                  sizeof(my_source_mgr));
   }
 
-  src = cinfo->src;
-  src->init_source = init_mem_source;
-  src->fill_input_buffer = fill_mem_input_buffer;
-  src->skip_input_data = skip_input_data;
-  src->resync_to_restart = jpeg_resync_to_restart; /* use default method */
-  src->term_source = term_source;
-  src->bytes_in_buffer = (size_t) insize;
-  src->next_input_byte = (const JOCTET *) inbuffer;
+  src = (my_src_ptr)cinfo->src;
+  src->pub.init_source = init_mem_source;
+  src->pub.fill_input_buffer = fill_mem_input_buffer;
+  src->pub.skip_input_data = skip_input_data;
+  src->pub.resync_to_restart = jpeg_resync_to_restart; /* use default method */
+  src->pub.term_source = term_source;
+  src->pub.check_seekable = check_seekable;
+  src->pub.get_src_offset = get_src_offset;
+  src->pub.restore_src = restore_src;
+  src->pub.bytes_in_buffer = (size_t) insize;
+  src->pub.next_input_byte = (JOCTET *) inbuffer;
+  src->inbuffer = inbuffer;
 }

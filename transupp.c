@@ -1116,7 +1116,7 @@ jtransform_request_workspace (j_decompress_ptr srcinfo,
       height_in_blocks = height_in_iMCUs * v_samp_factor;
       coef_arrays[ci] = (*srcinfo->mem->request_virt_barray)
         ((j_common_ptr) srcinfo, JPOOL_IMAGE, FALSE,
-         width_in_blocks, height_in_blocks, (JDIMENSION) v_samp_factor);
+         width_in_blocks, height_in_blocks, (JDIMENSION) v_samp_factor, FALSE);
     }
     info->workspace_coef_arrays = coef_arrays;
   } else

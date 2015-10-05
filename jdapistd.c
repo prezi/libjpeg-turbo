@@ -79,6 +79,10 @@ jpeg_start_decompress (j_decompress_ptr cinfo)
 #endif /* D_MULTISCAN_FILES_SUPPORTED */
     }
     cinfo->output_scan_number = cinfo->input_scan_number;
+    if (cinfo->pm_dummy_pass) {
+      cinfo->pm_dummy_pass=FALSE;
+      cinfo->inputctl->consume_input = cinfo->coef->consume_data;
+    }
   } else if (cinfo->global_state != DSTATE_PRESCAN)
     ERREXIT1(cinfo, JERR_BAD_STATE, cinfo->global_state);
   /* Perform any dummy output passes, and set up for the final pass */

@@ -565,6 +565,19 @@ master_selection (j_decompress_ptr cinfo)
       jinit_huff_decoder(cinfo);
   }
 
+#if defined(D_MULTISCAN_FILES_SUPPORTED) && defined(LOWMEM_PROGRESSIVE_DECODE)
+  if (cinfo->inputctl->has_multiple_scans) {
+    if ((*cinfo->src->check_seekable)(cinfo)) {
+      cinfo->lowmem_progressive_decode=TRUE;
+      cinfo->pm_dummy_pass=TRUE;
+      jinit_scan_context_controller(cinfo);
+    } else {
+      cinfo->lowmem_progressive_decode=FALSE;
+      cinfo->pm_dummy_pass=FALSE;
+    }
+  }
+#endif /* D_MULTISCAN_FILES_SUPPORTED && LOWMEM_PROGRESSIVE_DECODE */
+
   /* Initialize principal buffer controllers. */
   use_c_buffer = cinfo->inputctl->has_multiple_scans || cinfo->buffered_image;
   jinit_d_coef_controller(cinfo, use_c_buffer);
@@ -577,6 +590,11 @@ master_selection (j_decompress_ptr cinfo)
 
   /* Initialize input side of decompressor to consume first scan. */
   (*cinfo->inputctl->start_input_pass) (cinfo);
+#if defined(D_MULTISCAN_FILES_SUPPORTED) && defined(LOWMEM_PROGRESSIVE_DECODE)
+  if (cinfo->inputctl->has_multiple_scans && cinfo->lowmem_progressive_decode)
+    (*cinfo->scancontextctl->save_scan_state)(cinfo, cinfo->input_scan_number-1);
+#endif /* D_MULTISCAN_FILES_SUPPORTED && LOWMEM_PROGRESSIVE_DECODE */
+
 
 #ifdef D_MULTISCAN_FILES_SUPPORTED
   /* If jpeg_start_decompress will read the whole file, initialize

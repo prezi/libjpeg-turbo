@@ -229,3 +229,20 @@ slowlabel: \
 EXTERN(int) jpeg_huff_decode
         (bitread_working_state * state, register bit_buf_type get_buffer,
          register int bits_left, d_derived_tbl * htbl, int min_bits);
+
+#if defined(D_MULTISCAN_FILES_SUPPORTED) && defined(LOWMEM_PROGRESSIVE_DECODE)
+
+typedef struct {		/* Bitreading state saved across MCUs */
+  long get_buffer;	/* current bit-extraction buffer */
+  int bits_left;		/* # of unused bits in it */
+  unsigned int EOBRUN;		/* run length of EOBs */
+  int last_dc_val[MAX_COMPS_IN_SCAN];	/* last DC coef for each component */
+  unsigned int restarts_to_go;	/* MCUs left in this restart interval */
+} entropy_scan_context;
+
+
+void save_entropy_state(j_decompress_ptr cinfo, entropy_scan_context* context);
+
+void restore_entropy_state(j_decompress_ptr cinfo, entropy_scan_context* context);
+
+#endif /* D_MULTISCAN_FILES_SUPPORTED && LOWMEM_PROGRESSIVE_DECODE */

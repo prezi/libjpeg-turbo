@@ -225,6 +225,7 @@ typedef int boolean;
 #define TRUE    1
 #endif
 
+#undef ENABLE_MEMORY_TEST                /* Measure allocated memory */
 
 /*
  * The remaining options affect code selection within the JPEG library,
@@ -273,6 +274,7 @@ typedef int boolean;
 
 #define D_MULTISCAN_FILES_SUPPORTED /* Multiple-scan JPEG files? */
 #define D_PROGRESSIVE_SUPPORTED     /* Progressive JPEG? (Requires MULTISCAN)*/
+#define LOWMEM_PROGRESSIVE_DECODE   /* Low memory decode for progressive JPEG */
 #define SAVE_MARKERS_SUPPORTED      /* jpeg_save_markers() needed? */
 #define BLOCK_SMOOTHING_SUPPORTED   /* Block smoothing? (Progressive only) */
 #define IDCT_SCALING_SUPPORTED      /* Output rescaling via IDCT? */

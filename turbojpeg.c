@@ -2118,3 +2118,11 @@ DLLEXPORT int DLLCALL tjTransform(tjhandle handle,
 	if(this->jerr.warning) retval=-1;
 	return retval;
 }
+
+#ifdef ENABLE_MEMORY_TEST
+DLLEXPORT size_t DLLCALL GetAllocatedMemory(tjhandle handle)
+{
+	getinstance(handle);
+	return dinfo->allocated_memory;
+}
+#endif

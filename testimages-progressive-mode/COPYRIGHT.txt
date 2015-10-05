@@ -1,0 +1,4 @@
+These images are provided solely for the purpose of testing memory performance of
+decoding of progressive JPEG with the forked libjpeg-turbo with low memory JPEG
+decode function (https://github.com/komakai/libjpeg-turbo). No copyright is claimed
+and no copyright infringement is intended.

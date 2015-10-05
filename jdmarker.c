@@ -921,6 +921,11 @@ next_marker (j_decompress_ptr cinfo)
     INPUT_SYNC(cinfo);
   }
 
+  if (cinfo->pm_dummy_pass) {
+    //suppress "extraneous data" warning on dummy pass 
+    cinfo->marker->discarded_bytes = 0;
+  }
+
   if (cinfo->marker->discarded_bytes != 0) {
     WARNMS2(cinfo, JWRN_EXTRANEOUS_DATA, cinfo->marker->discarded_bytes, c);
     cinfo->marker->discarded_bytes = 0;

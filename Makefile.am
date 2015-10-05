@@ -20,9 +20,9 @@ libjpeg_la_SOURCES = $(HDRS) jcapimin.c jcapistd.c jccoefct.c jccolor.c \
 	jcomapi.c jcparam.c jcphuff.c jcprepct.c jcsample.c jctrans.c \
 	jdapimin.c jdapistd.c jdatadst.c jdatasrc.c jdcoefct.c jdcolor.c \
 	jddctmgr.c jdhuff.c jdinput.c jdmainct.c jdmarker.c jdmaster.c \
-	jdmerge.c jdphuff.c jdpostct.c jdsample.c jdtrans.c jerror.c \
-	jfdctflt.c jfdctfst.c jfdctint.c jidctflt.c jidctfst.c jidctint.c \
-	jidctred.c jquant1.c jquant2.c jutils.c jmemmgr.c jmemnobs.c
+	jdmerge.c jdphuff.c jdpostct.c jdsample.c jdscnctx.c jdtrans.c \
+	jerror.c jfdctflt.c jfdctfst.c jfdctint.c jidctflt.c jidctfst.c \
+	jidctint.c jidctred.c jquant1.c jquant2.c jutils.c jmemmgr.c jmemnobs.c
 
 if WITH_ARITH
 libjpeg_la_SOURCES += jaricom.c

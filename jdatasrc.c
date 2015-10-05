@@ -31,6 +31,8 @@ typedef struct {
   FILE * infile;                /* source stream */
   JOCTET * buffer;              /* start of buffer */
   boolean start_of_file;        /* have we gotten any data yet? */
+  boolean seekable;
+  boolean ran_seek_test;
 } my_source_mgr;
 
 typedef my_source_mgr * my_src_ptr;
@@ -205,6 +207,66 @@ term_source (j_decompress_ptr cinfo)
   /* no work necessary here */
 }
 
+/* Run simple test to see if fseek and ftell work for this data source */
+METHODDEF(boolean)
+check_seekable(j_decompress_ptr cinfo)
+{
+  my_src_ptr src = (my_src_ptr) cinfo->src;
+  long offset;
+  int seek_ret;
+  boolean seekback;
+  
+  if (src->ran_seek_test)
+    return src->seekable;
+
+  offset = ftell(src->infile);
+  if (offset==-1L)
+    goto error;
+  seekback = (offset>=4)?TRUE:FALSE;
+  offset += seekback?(-4):4;
+  seek_ret = fseek(src->infile, offset, SEEK_SET);
+  if (seek_ret!=0)
+    goto error;
+  if (ftell(src->infile)!=offset)
+    goto error;
+  offset += seekback?4:(-4);
+  seek_ret = fseek(src->infile, offset, SEEK_SET);
+  if (seek_ret!=0)
+    goto error;
+  if (ftell(src->infile)!=offset)
+    goto error;
+  src->seekable = TRUE;
+  src->ran_seek_test = TRUE;
+  return TRUE;
+error:
+  src->seekable = FALSE;
+  src->ran_seek_test = TRUE;
+  return FALSE;
+}
+
+/* Get the current position in the data source */
+METHODDEF(long)
+get_src_offset(j_decompress_ptr cinfo)
+{
+  my_src_ptr src = (my_src_ptr) cinfo->src;
+
+  return ftell(src->infile);
+}
+
+/* Reset the current position of the data source and refill input buffer */
+METHODDEF(void)
+restore_src(j_decompress_ptr cinfo, long file_offset, size_t bytes_in_buffer)
+{
+  my_src_ptr src = (my_src_ptr) cinfo->src;
+  size_t nbytes;
+
+  fseek(src->infile, file_offset-INPUT_BUF_SIZE, SEEK_SET);
+  nbytes = JFREAD(src->infile, src->buffer, INPUT_BUF_SIZE);
+
+  src->pub.bytes_in_buffer = bytes_in_buffer;
+  src->pub.next_input_byte = src->buffer+(INPUT_BUF_SIZE-bytes_in_buffer);
+}
+
 
 /*
  * Prepare for input from a stdio stream.
@@ -240,9 +302,14 @@ jpeg_stdio_src (j_decompress_ptr cinfo, FILE * infile)
   src->pub.skip_input_data = skip_input_data;
   src->pub.resync_to_restart = jpeg_resync_to_restart; /* use default method */
   src->pub.term_source = term_source;
+  src->pub.check_seekable = check_seekable;
+  src->pub.get_src_offset = get_src_offset;
+  src->pub.restore_src = restore_src;
   src->infile = infile;
   src->pub.bytes_in_buffer = 0; /* forces fill_input_buffer on first read */
   src->pub.next_input_byte = NULL; /* until buffer loaded */
+  src->seekable = FALSE;
+  src->ran_seek_test = FALSE;
 }
 
 

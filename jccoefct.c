@@ -427,7 +427,7 @@ jinit_c_coef_controller (j_compress_ptr cinfo, boolean need_full_buffer)
                                 (long) compptr->h_samp_factor),
          (JDIMENSION) jround_up((long) compptr->height_in_blocks,
                                 (long) compptr->v_samp_factor),
-         (JDIMENSION) compptr->v_samp_factor);
+         (JDIMENSION) compptr->v_samp_factor, FALSE);
     }
 #else
     ERREXIT(cinfo, JERR_BAD_BUFFER_MODE);

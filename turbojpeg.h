@@ -1530,6 +1530,9 @@ DLLEXPORT int DLLCALL tjDecompressToYUV(tjhandle handle,
   unsigned char *jpegBuf, unsigned long jpegSize, unsigned char *dstBuf,
   int flags);
 
+#ifdef ENABLE_MEMORY_TEST
+DLLEXPORT size_t DLLCALL GetAllocatedMemory(tjhandle handle);
+#endif
 
 /**
  * @}

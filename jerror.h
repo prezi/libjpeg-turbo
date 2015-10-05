@@ -206,6 +206,9 @@ JMESSAGE(JERR_BAD_CROP_SPEC, "Invalid crop request")
 JMESSAGE(JERR_NO_ARITH_TABLE, "Arithmetic table 0x%02x was not defined")
 JMESSAGE(JWRN_ARITH_BAD_CODE, "Corrupt JPEG data: bad arithmetic code")
 #endif
+#if defined(D_MULTISCAN_FILES_SUPPORTED) && defined(LOWMEM_PROGRESSIVE_DECODE)
+JMESSAGE(JERR_MAX_SCANS_EXCEEDED, "Maximum number of scans(%u) exceeded")
+#endif
 #endif
 
 #ifdef JMAKE_ENUM_LIST
