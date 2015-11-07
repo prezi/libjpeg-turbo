@@ -2,7 +2,7 @@ What is this?
 
 This is a forked version of libjpeg-turbo with optimizations for low-memory
 decoding of progressive-mode JPEGs. For details of libjpeg-turbo and non-turbo
-libjpeg please refer to README-turbo.txt and README-libjpeg.txt.
+libjpeg please refer to README-turbo.md and README.ijg.
 
 Some Background
 
