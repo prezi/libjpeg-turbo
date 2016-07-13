@@ -261,11 +261,20 @@ restore_src(j_decompress_ptr cinfo, long file_offset, size_t bytes_in_buffer)
   my_src_ptr src = (my_src_ptr) cinfo->src;
   size_t nbytes;
 
-  fseek(src->infile, file_offset-INPUT_BUF_SIZE, SEEK_SET);
-  nbytes = JFREAD(src->infile, src->buffer, INPUT_BUF_SIZE);
+  if (file_offset > INPUT_BUF_SIZE) {
+    fseek(src->infile, file_offset - INPUT_BUF_SIZE, SEEK_SET);
+    nbytes = JFREAD(src->infile, src->buffer, INPUT_BUF_SIZE);
 
-  src->pub.bytes_in_buffer = bytes_in_buffer;
-  src->pub.next_input_byte = src->buffer+(INPUT_BUF_SIZE-bytes_in_buffer);
+    src->pub.bytes_in_buffer = bytes_in_buffer;
+    src->pub.next_input_byte = src->buffer + (INPUT_BUF_SIZE - bytes_in_buffer);
+  } else {
+    fseek(src->infile, 0, SEEK_SET);
+    nbytes = JFREAD(src->infile, src->buffer, file_offset);
+
+	src->pub.bytes_in_buffer = bytes_in_buffer;
+    src->pub.next_input_byte = src->buffer + (file_offset - bytes_in_buffer);
+  }
+
 }
 
 
