@@ -354,21 +354,26 @@ jpeg_skip_scanlines (j_decompress_ptr cinfo, JDIMENSION num_lines)
    * that the input data source is non-suspending.  This makes skipping easy.
    */
   if (cinfo->inputctl->has_multiple_scans) {
-    if (cinfo->upsample->need_context_rows) {
-      cinfo->output_scanline += lines_to_skip;
-      cinfo->output_iMCU_row += lines_to_skip / lines_per_iMCU_row;
-      main_ptr->iMCU_row_ctr += lines_after_iMCU_row / lines_per_iMCU_row;
-      /* It is complex to properly move to the middle of a context block, so
-       * read the remaining lines instead of skipping them.
-       */
-      read_and_discard_scanlines(cinfo, lines_to_read);
+    if (cinfo->lowmem_progressive_decode) {
+      read_and_discard_scanlines(cinfo, num_lines );
+      return num_lines;
     } else {
-      cinfo->output_scanline += lines_to_skip;
-      cinfo->output_iMCU_row += lines_to_skip / lines_per_iMCU_row;
-      increment_simple_rowgroup_ctr(cinfo, lines_to_read);
-    }
-    upsample->rows_to_go = cinfo->output_height - cinfo->output_scanline;
-    return num_lines;
+      if (cinfo->upsample->need_context_rows) {
+        cinfo->output_scanline += lines_to_skip;
+        cinfo->output_iMCU_row += lines_to_skip / lines_per_iMCU_row;
+        main_ptr->iMCU_row_ctr += lines_after_iMCU_row / lines_per_iMCU_row;
+        /* It is complex to properly move to the middle of a context block, so
+         * read the remaining lines instead of skipping them.
+         */
+        read_and_discard_scanlines(cinfo, lines_to_read);
+      } else {
+        cinfo->output_scanline += lines_to_skip;
+        cinfo->output_iMCU_row += lines_to_skip / lines_per_iMCU_row;
+        increment_simple_rowgroup_ctr(cinfo, lines_to_read);
+      }
+      upsample->rows_to_go = cinfo->output_height - cinfo->output_scanline;
+      return num_lines;
+	}
   }
 
   /* Skip the iMCU rows that we can safely skip. */

@@ -699,7 +699,7 @@ realize_virt_arrays (j_common_ptr cinfo)
 
     if (bptr->mem_buffer == NULL) { /* if not realized yet */
       if (bptr->virtualbackingstore) {  
-	max_minheights = 1;
+        max_minheights = 1;
       }
       minheights = ((long) bptr->rows_in_array - 1L) / bptr->maxaccess + 1L;
       if (minheights <= max_minheights) {

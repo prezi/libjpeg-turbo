@@ -62,15 +62,15 @@ save_scan_state(j_decompress_ptr cinfo, int scan_no)
   for (i=0;i<NUM_HUFF_TBLS;i++) {
     if (is_DC_band) {
       if (cinfo->dc_huff_tbl_ptrs[i]) {
-    MEMCOPY(&context->hufftables[i],cinfo->dc_huff_tbl_ptrs[i],sizeof(JHUFF_TBL));
+        MEMCOPY(&context->hufftables[i],cinfo->dc_huff_tbl_ptrs[i],sizeof(JHUFF_TBL));
       } else {
-    MEMZERO(&context->hufftables[i],sizeof(JHUFF_TBL));
+        MEMZERO(&context->hufftables[i],sizeof(JHUFF_TBL));
       }
     } else {
       if (cinfo->ac_huff_tbl_ptrs[i]) {
-    MEMCOPY(&context->hufftables[i],cinfo->ac_huff_tbl_ptrs[i],sizeof(JHUFF_TBL));
+        MEMCOPY(&context->hufftables[i],cinfo->ac_huff_tbl_ptrs[i],sizeof(JHUFF_TBL));
       } else {
-    MEMZERO(&context->hufftables[i],sizeof(JHUFF_TBL));
+        MEMZERO(&context->hufftables[i],sizeof(JHUFF_TBL));
       }
     }
   }
