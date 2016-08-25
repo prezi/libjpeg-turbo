@@ -105,6 +105,8 @@ typedef my_color_deconverter *my_cconvert_ptr;
 #define ycc_rgb_convert_internal ycc_extrgb_convert_internal
 #define gray_rgb_convert_internal gray_extrgb_convert_internal
 #define rgb_rgb_convert_internal rgb_extrgb_convert_internal
+#define cmyk_rgb_convert_internal cmyk_extrgb_convert_internal
+#define ycck_rgb_convert_internal ycck_extrgb_convert_internal
 #include "jdcolext.c"
 #undef RGB_RED
 #undef RGB_GREEN
@@ -113,6 +115,8 @@ typedef my_color_deconverter *my_cconvert_ptr;
 #undef ycc_rgb_convert_internal
 #undef gray_rgb_convert_internal
 #undef rgb_rgb_convert_internal
+#undef cmyk_rgb_convert_internal
+#undef ycck_rgb_convert_internal
 
 #define RGB_RED EXT_RGBX_RED
 #define RGB_GREEN EXT_RGBX_GREEN
@@ -122,6 +126,8 @@ typedef my_color_deconverter *my_cconvert_ptr;
 #define ycc_rgb_convert_internal ycc_extrgbx_convert_internal
 #define gray_rgb_convert_internal gray_extrgbx_convert_internal
 #define rgb_rgb_convert_internal rgb_extrgbx_convert_internal
+#define cmyk_rgb_convert_internal cmyk_extrgbx_convert_internal
+#define ycck_rgb_convert_internal ycck_extrgbx_convert_internal
 #include "jdcolext.c"
 #undef RGB_RED
 #undef RGB_GREEN
@@ -131,6 +137,8 @@ typedef my_color_deconverter *my_cconvert_ptr;
 #undef ycc_rgb_convert_internal
 #undef gray_rgb_convert_internal
 #undef rgb_rgb_convert_internal
+#undef cmyk_rgb_convert_internal
+#undef ycck_rgb_convert_internal
 
 #define RGB_RED EXT_BGR_RED
 #define RGB_GREEN EXT_BGR_GREEN
@@ -139,6 +147,8 @@ typedef my_color_deconverter *my_cconvert_ptr;
 #define ycc_rgb_convert_internal ycc_extbgr_convert_internal
 #define gray_rgb_convert_internal gray_extbgr_convert_internal
 #define rgb_rgb_convert_internal rgb_extbgr_convert_internal
+#define cmyk_rgb_convert_internal cmyk_extbgr_convert_internal
+#define ycck_rgb_convert_internal ycck_extbgr_convert_internal
 #include "jdcolext.c"
 #undef RGB_RED
 #undef RGB_GREEN
@@ -147,6 +157,8 @@ typedef my_color_deconverter *my_cconvert_ptr;
 #undef ycc_rgb_convert_internal
 #undef gray_rgb_convert_internal
 #undef rgb_rgb_convert_internal
+#undef cmyk_rgb_convert_internal
+#undef ycck_rgb_convert_internal
 
 #define RGB_RED EXT_BGRX_RED
 #define RGB_GREEN EXT_BGRX_GREEN
@@ -156,6 +168,8 @@ typedef my_color_deconverter *my_cconvert_ptr;
 #define ycc_rgb_convert_internal ycc_extbgrx_convert_internal
 #define gray_rgb_convert_internal gray_extbgrx_convert_internal
 #define rgb_rgb_convert_internal rgb_extbgrx_convert_internal
+#define cmyk_rgb_convert_internal cmyk_extbgrx_convert_internal
+#define ycck_rgb_convert_internal ycck_extbgrx_convert_internal
 #include "jdcolext.c"
 #undef RGB_RED
 #undef RGB_GREEN
@@ -165,6 +179,8 @@ typedef my_color_deconverter *my_cconvert_ptr;
 #undef ycc_rgb_convert_internal
 #undef gray_rgb_convert_internal
 #undef rgb_rgb_convert_internal
+#undef cmyk_rgb_convert_internal
+#undef ycck_rgb_convert_internal
 
 #define RGB_RED EXT_XBGR_RED
 #define RGB_GREEN EXT_XBGR_GREEN
@@ -174,6 +190,8 @@ typedef my_color_deconverter *my_cconvert_ptr;
 #define ycc_rgb_convert_internal ycc_extxbgr_convert_internal
 #define gray_rgb_convert_internal gray_extxbgr_convert_internal
 #define rgb_rgb_convert_internal rgb_extxbgr_convert_internal
+#define cmyk_rgb_convert_internal cmyk_extxbgr_convert_internal
+#define ycck_rgb_convert_internal ycck_extxbgr_convert_internal
 #include "jdcolext.c"
 #undef RGB_RED
 #undef RGB_GREEN
@@ -183,6 +201,8 @@ typedef my_color_deconverter *my_cconvert_ptr;
 #undef ycc_rgb_convert_internal
 #undef gray_rgb_convert_internal
 #undef rgb_rgb_convert_internal
+#undef cmyk_rgb_convert_internal
+#undef ycck_rgb_convert_internal
 
 #define RGB_RED EXT_XRGB_RED
 #define RGB_GREEN EXT_XRGB_GREEN
@@ -192,6 +212,8 @@ typedef my_color_deconverter *my_cconvert_ptr;
 #define ycc_rgb_convert_internal ycc_extxrgb_convert_internal
 #define gray_rgb_convert_internal gray_extxrgb_convert_internal
 #define rgb_rgb_convert_internal rgb_extxrgb_convert_internal
+#define cmyk_rgb_convert_internal cmyk_extxrgb_convert_internal
+#define ycck_rgb_convert_internal ycck_extxrgb_convert_internal
 #include "jdcolext.c"
 #undef RGB_RED
 #undef RGB_GREEN
@@ -201,6 +223,8 @@ typedef my_color_deconverter *my_cconvert_ptr;
 #undef ycc_rgb_convert_internal
 #undef gray_rgb_convert_internal
 #undef rgb_rgb_convert_internal
+#undef cmyk_rgb_convert_internal
+#undef ycck_rgb_convert_internal
 
 
 /*
@@ -523,6 +547,95 @@ rgb_rgb_convert (j_decompress_ptr cinfo,
   }
 }
 
+/*
+ * Convert CMYK to RGB
+ */
+
+METHODDEF(void)
+cmyk_rgb_convert (j_decompress_ptr cinfo,
+                  JSAMPIMAGE input_buf, JDIMENSION input_row,
+                  JSAMPARRAY output_buf, int num_rows)
+{
+  switch (cinfo->out_color_space) {
+    case JCS_EXT_RGB:
+      cmyk_extrgb_convert_internal(cinfo, input_buf, input_row, output_buf,
+                                   num_rows);
+      break;
+    case JCS_EXT_RGBX:
+    case JCS_EXT_RGBA:
+      cmyk_extrgbx_convert_internal(cinfo, input_buf, input_row, output_buf,
+                                    num_rows);
+      break;
+    case JCS_EXT_BGR:
+      cmyk_extbgr_convert_internal(cinfo, input_buf, input_row, output_buf,
+                                   num_rows);
+      break;
+    case JCS_EXT_BGRX:
+    case JCS_EXT_BGRA:
+      cmyk_extbgrx_convert_internal(cinfo, input_buf, input_row, output_buf,
+                                    num_rows);
+      break;
+    case JCS_EXT_XBGR:
+    case JCS_EXT_ABGR:
+      cmyk_extxbgr_convert_internal(cinfo, input_buf, input_row, output_buf,
+                                    num_rows);
+      break;
+    case JCS_EXT_XRGB:
+    case JCS_EXT_ARGB:
+      cmyk_extxrgb_convert_internal(cinfo, input_buf, input_row, output_buf,
+                                    num_rows);
+      break;
+    default:
+      cmyk_rgb_convert_internal(cinfo, input_buf, input_row, output_buf,
+                                num_rows);
+      break;
+  }
+}
+
+/*
+ * Convert CMYK to RGB
+ */
+
+METHODDEF(void)
+ycck_rgb_convert (j_decompress_ptr cinfo,
+                  JSAMPIMAGE input_buf, JDIMENSION input_row,
+                  JSAMPARRAY output_buf, int num_rows)
+{
+  switch (cinfo->out_color_space) {
+    case JCS_EXT_RGB:
+      ycck_extrgb_convert_internal(cinfo, input_buf, input_row, output_buf,
+                                   num_rows);
+      break;
+    case JCS_EXT_RGBX:
+    case JCS_EXT_RGBA:
+      ycck_extrgbx_convert_internal(cinfo, input_buf, input_row, output_buf,
+                                    num_rows);
+      break;
+    case JCS_EXT_BGR:
+      ycck_extbgr_convert_internal(cinfo, input_buf, input_row, output_buf,
+                                   num_rows);
+      break;
+    case JCS_EXT_BGRX:
+    case JCS_EXT_BGRA:
+      ycck_extbgrx_convert_internal(cinfo, input_buf, input_row, output_buf,
+                                    num_rows);
+      break;
+    case JCS_EXT_XBGR:
+    case JCS_EXT_ABGR:
+      ycck_extxbgr_convert_internal(cinfo, input_buf, input_row, output_buf,
+                                    num_rows);
+      break;
+    case JCS_EXT_XRGB:
+    case JCS_EXT_ARGB:
+      ycck_extxrgb_convert_internal(cinfo, input_buf, input_row, output_buf,
+                                    num_rows);
+      break;
+    default:
+      ycck_rgb_convert_internal(cinfo, input_buf, input_row, output_buf,
+                                num_rows);
+      break;
+  }
+}
 
 /*
  * Adobe-style YCCK->CMYK conversion.
@@ -732,7 +845,6 @@ gray_rgb565D_convert (j_decompress_ptr cinfo,
     gray_rgb565D_convert_le(cinfo, input_buf, input_row, output_buf, num_rows);
 }
 
-
 /*
  * Empty method for start_pass.
  */
@@ -835,6 +947,11 @@ jinit_color_deconverter (j_decompress_ptr cinfo)
         cconvert->pub.color_convert = null_convert;
       else
         cconvert->pub.color_convert = rgb_rgb_convert;
+    } else if (cinfo->jpeg_color_space == JCS_CMYK) {
+      cconvert->pub.color_convert = cmyk_rgb_convert;
+    } else if (cinfo->jpeg_color_space == JCS_YCCK) {
+      cconvert->pub.color_convert = ycck_rgb_convert;
+      build_ycc_rgb_table(cinfo);
     } else
       ERREXIT(cinfo, JERR_CONVERSION_NOTIMPL);
     break;

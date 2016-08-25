@@ -141,3 +141,105 @@ rgb_rgb_convert_internal (j_decompress_ptr cinfo,
     }
   }
 }
+
+/*
+ * Convert inverted CMYK to RGB
+ *
+ */
+
+INLINE
+LOCAL(void)
+cmyk_rgb_convert_internal (j_decompress_ptr cinfo,
+    JSAMPIMAGE input_buf, JDIMENSION input_row,
+    JSAMPARRAY output_buf, int num_rows)
+{
+  double c, m, y, k;
+  register JSAMPROW outptr;
+  register JSAMPROW inptr0, inptr1, inptr2, inptr3;
+  register JDIMENSION col;
+
+  JDIMENSION num_cols = cinfo->output_width;
+
+  while (--num_rows >= 0) {
+    inptr0 = input_buf[0][input_row];
+    inptr1 = input_buf[1][input_row];
+    inptr2 = input_buf[2][input_row];
+    inptr3 = input_buf[3][input_row];
+    input_row++;
+    outptr = *output_buf++;
+    for (col = 0; col < num_cols; col++) {
+      c = (double) GETJSAMPLE(inptr0[col]);
+      m = (double) GETJSAMPLE(inptr1[col]);
+      y = (double) GETJSAMPLE(inptr2[col]);
+      k = (double) GETJSAMPLE(inptr3[col]);
+
+      outptr[RGB_RED]   = (JSAMPLE)(c*k/255);
+      outptr[RGB_GREEN] = (JSAMPLE)(m*k/255);
+      outptr[RGB_BLUE]  = (JSAMPLE)(y*k/255);
+      outptr += RGB_PIXELSIZE;
+    }
+  }
+}
+
+ /*
+  * Convert YCCK to RGB
+  */
+INLINE
+LOCAL(void)
+ycck_rgb_convert_internal (j_decompress_ptr cinfo,
+      JSAMPIMAGE input_buf, JDIMENSION input_row,
+      JSAMPARRAY output_buf, int num_rows)
+{
+  my_cconvert_ptr cconvert = (my_cconvert_ptr) cinfo->cconvert;
+  double cyan, magenta, yellow, black;
+  register int y, cb, cr;
+  register JSAMPROW outptr;
+  register JSAMPROW inptr0, inptr1, inptr2, inptr3;
+  register JDIMENSION col;
+  JDIMENSION num_cols = cinfo->output_width;
+
+  /* copy these pointers into registers if possible */
+  register JSAMPLE * range_limit = cinfo->sample_range_limit;
+  register int * Crrtab = cconvert->Cr_r_tab;
+  register int * Cbbtab = cconvert->Cb_b_tab;
+  register INT32 * Crgtab = cconvert->Cr_g_tab;
+  register INT32 * Cbgtab = cconvert->Cb_g_tab;
+  SHIFT_TEMPS
+
+  while (--num_rows >= 0) {
+    inptr0 = input_buf[0][input_row];
+    inptr1 = input_buf[1][input_row];
+    inptr2 = input_buf[2][input_row];
+    inptr3 = input_buf[3][input_row];
+    input_row++;
+    outptr = *output_buf++;
+    for (col = 0; col < num_cols; col++) {
+      /********* Read YCCK Pixel **********/
+      y     = GETJSAMPLE(inptr0[col]);
+      cb    = GETJSAMPLE(inptr1[col]);
+      cr    = GETJSAMPLE(inptr2[col]);
+      black = (double)GETJSAMPLE(inptr3[col]);
+
+      /********* Convert  YCCK to CMYK  **********/
+      /* Range-limiting is essential due to noise introduced by DCT losses. */
+      outptr[0] = range_limit[MAXJSAMPLE - (y + Crrtab[cr])];
+      outptr[1] = range_limit[MAXJSAMPLE - (y +
+           ((int) RIGHT_SHIFT(Cbgtab[cb] + Crgtab[cr], SCALEBITS)))];
+      outptr[2] = range_limit[MAXJSAMPLE - (y + Cbbtab[cb])];
+      /* K passes through unchanged */
+      outptr[3] = inptr3[col]; /* don't need GETJSAMPLE here */
+
+      cyan    = (double)GETJSAMPLE(outptr[0]);
+      magenta = (double)GETJSAMPLE(outptr[1]);
+      yellow  = (double)GETJSAMPLE(outptr[2]);
+      /* Black is same as in YCCK input */
+
+      /********* Convert  CMYK to RGB  **********/
+      outptr[RGB_RED]   = (JSAMPLE)(cyan*black/255);
+      outptr[RGB_GREEN] = (JSAMPLE)(magenta*black/255);
+      outptr[RGB_BLUE]  = (JSAMPLE)(yellow*black/255);
+
+      outptr += RGB_PIXELSIZE;
+    }
+  }
+}
